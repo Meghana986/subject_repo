@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Rajesh Attendance - Academic 2026</title>
+<style>
+body { font-family: Arial; margin:0; background:#f4f6f9; }
+header { background:#2c3e50; color:white; padding:15px; text-align:center; }
+.container { padding:20px; text-align:center; }
+input { padding:8px; margin:10px; }
+
+table {
+    margin:20px auto;
+    border-collapse:collapse;
+    width:95%;
+    background:white;
+}
+
+th, td {
+    padding:8px;
+    border:1px solid #ccc;
+    font-size:14px;
+}
+
+th {
+    background:#34495e;
+    color:white;
+}
+
+button {
+    padding:6px 12px;
+    margin:5px;
+    border:none;
+    cursor:pointer;
+}
+
+.present { background:green; color:white; }
+.absent { background:red; color:white; }
+
+.summary, .overall {
+    margin-top:15px;
+    font-weight:bold;
+}
+
+.report-section {
+    margin-top:40px;
+}
+
+.print-btn { background:#2c3e50; color:white; }
+.download-btn { background:#27ae60; color:white; }
+
+</style>
+</head>
+
+<body>
+
+<header>
+BCom 4th Sem - Rajesh Attendance (Academic Year 2026)
+</header>
+
+<div class="container">
+
+<h3>Select Date (2026 Only)</h3>
+<input type="date" id="date" min="2026-01-01" max="2026-12-31">
+
+<button onclick="loadAttendance()">Load</button>
+<button onclick="saveAttendance()">Save</button>
+<button onclick="generateReport()">Generate Report</button>
+
+<table id="attendanceTable"></table>
+
+<div class="summary" id="dailySummary"></div>
+<div class="overall" id="overallSummary"></div>
+
+<!-- REPORT SECTION -->
+<div class="report-section">
+<h2>📊 Academic 2026 Data Report</h2>
+<button class="print-btn" onclick="window.print()">Print Report</button>
+<button class="download-btn" onclick="downloadFullReport()">Download CSV</button>
+
+<table id="reportTable">
+<tr>
+<th>Date</th>
+<th>Subject</th>
+<th>Status</th>
+</tr>
+</table>
+</div>
+
+</div>
+
+<script>
+
+const subjects = ["Kannada","English","ACA","SS","IC","CM","SCM","RM"];
+let attendance = {};
+
+document.getElementById("date").value = "2026-01-01";
+
+function loadAttendance(){
+let date=document.getElementById("date").value;
+attendance = JSON.parse(localStorage.getItem("2026_"+date)) || {};
+
+let table=document.getElementById("attendanceTable");
+table.innerHTML=`
+<tr>
+<th>Subject</th>
+<th>Status</th>
+</tr>`;
+
+subjects.forEach(sub=>{
+let status=attendance[sub] || "Absent";
+attendance[sub]=status;
+
+table.innerHTML+=`
+<tr>
+<td>${sub}</td>
+<td>
+<button class="present" onclick="mark('${sub}','Present')">Present</button>
+<button class="absent" onclick="mark('${sub}','Absent')">Absent</button>
+<br><b id="s_${sub}">${status}</b>
+</td>
+</tr>`;
+});
+
+updateDailySummary();
+updateOverallSummary();
+}
+
+function mark(subject,status){
+attendance[subject]=status;
+document.getElementById("s_"+subject).innerText=status;
+updateDailySummary();
+}
+
+function saveAttendance(){
+let date=document.getElementById("date").value;
+localStorage.setItem("2026_"+date, JSON.stringify(attendance));
+alert("Attendance Saved!");
+updateOverallSummary();
+}
+
+function updateDailySummary(){
+let present=0;
+subjects.forEach(sub=>{
+if(attendance[sub]==="Present") present++;
+});
+let percent=((present/subjects.length)*100).toFixed(2);
+
+document.getElementById("dailySummary").innerText=
+"Daily → Present: "+present+
+" | Absent: "+(subjects.length-present)+
+" | Daily %: "+percent+"%";
+}
+
+function updateOverallSummary(){
+let totalClasses=0;
+let totalPresent=0;
+
+for(let i=0;i<localStorage.length;i++){
+let key=localStorage.key(i);
+if(key.startsWith("2026_")){
+let data=JSON.parse(localStorage.getItem(key));
+subjects.forEach(sub=>{
+if(data[sub]){
+totalClasses++;
+if(data[sub]==="Present") totalPresent++;
+}
+});
+}
+}
+
+let totalAbsent=totalClasses-totalPresent;
+let percent= totalClasses ? ((totalPresent/totalClasses)*100).toFixed(2) : 0;
+
+document.getElementById("overallSummary").innerText=
+"Overall 2026 → Total Classes: "+totalClasses+
+" | Present: "+totalPresent+
+" | Absent: "+totalAbsent+
+" | Overall %: "+percent+"%";
+}
+
+function generateReport(){
+let table=document.getElementById("reportTable");
+table.innerHTML=`
+<tr>
+<th>Date</th>
+<th>Subject</th>
+<th>Status</th>
+</tr>`;
+
+for(let i=0;i<localStorage.length;i++){
+let key=localStorage.key(i);
+if(key.startsWith("2026_")){
+let date=key.replace("2026_","");
+let data=JSON.parse(localStorage.getItem(key));
+
+subjects.forEach(sub=>{
+table.innerHTML+=`
+<tr>
+<td>${date}</td>
+<td>${sub}</td>
+<td>${data[sub]}</td>
+</tr>`;
+});
+}
+}
+}
+
+function downloadFullReport(){
+let csv="Date,Subject,Status\n";
+
+for(let i=0;i<localStorage.length;i++){
+let key=localStorage.key(i);
+if(key.startsWith("2026_")){
+let date=key.replace("2026_","");
+let data=JSON.parse(localStorage.getItem(key));
+subjects.forEach(sub=>{
+csv+=date+","+sub+","+data[sub]+"\n";
+});
+}
+}
+
+let blob=new Blob([csv],{type:'text/csv'});
+let link=document.createElement("a");
+link.href=URL.createObjectURL(blob);
+link.download="Rajesh_Academic_2026_Full_Report.csv";
+link.click();
+}
+
+loadAttendance();
+
+</script>
+
+</body>
+</html>
